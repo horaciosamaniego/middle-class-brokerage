@@ -1,0 +1,5 @@
+mode,pole,n_powered,median_R_perm,median_R_mix,frac_Rperm_gt1,frac_Rmix_lt1,frac_pmix_sig
+antenna,Q5,14,1.753,0.782,1.0,1.0,0.0
+antenna,Q1,26,0.927,0.857,0.231,1.0,0.0
+population,Q5,29,1.168,0.807,0.897,1.0,0.0
+population,Q1,38,0.957,0.811,0.342,1.0,0.0

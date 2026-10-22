@@ -1,0 +1,8 @@
+*.gt
+*.gt.gz
+__pycache__/
+*.pyc
+*~
+.ipynb_checkpoints/
+_site/
+.quarto/
