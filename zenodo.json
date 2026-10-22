@@ -1,0 +1,65 @@
+{
+  "title": "Code and derived data for \"Brokerage without bridging: the middle class does not connect rich and poor in Brazilian cities\"",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "mit",
+  "description": "<p>Code and city-level derived data for Samaniego, Menezes, Cantillán, Otero, Bucca &amp; Evsukoff, <em>Brokerage without bridging: the middle class does not connect rich and poor in Brazilian cities</em> (submitted to <em>Nature Cities</em>).</p><p>The study tests whether any income stratum brokers contact between rich and poor residents, using directed mobile-phone contact networks built from 3.1 billion calls across nearly 300 Brazilian cities, with a Gould–Fernandez brokerage census evaluated against a mixing-preserving null model.</p><p>The repository is organised in two tiers. <strong>Tier 1</strong> scripts reproduce every figure and table in the paper and its Supplementary Information from the derived data in <code>data/derived/</code>, which contain city- and stratum-level aggregates only. <strong>Tier 2</strong> scripts build those derived data from per-city contact graphs; the graphs and the underlying call-detail records are confidential and are not included.</p><p>Code is released under the MIT licence; derived data under CC BY 4.0. A summary of the main result is at <a href=\"https://horaciosamaniego.github.io/middle-class-brokerage/\">horaciosamaniego.github.io/middle-class-brokerage</a>.</p>",
+  "creators": [
+    {
+      "name": "Samaniego, Horacio",
+      "affiliation": "Universidad Austral de Chile",
+      "orcid": "0000-0002-2485-9827"
+    },
+    {
+      "name": "Menezes, Ronaldo",
+      "affiliation": "University of Exeter",
+      "orcid": "0000-0002-6479-6429"
+    },
+    {
+      "name": "Cantillán, Roberto",
+      "affiliation": "Pontificia Universidad Católica de Chile",
+      "orcid": "0000-0003-0494-0692"
+    },
+    {
+      "name": "Otero, Gabriel",
+      "affiliation": "Universidad Diego Portales",
+      "orcid": "0000-0001-9768-5699"
+    },
+    {
+      "name": "Bucca, Mauricio",
+      "affiliation": "Pontificia Universidad Católica de Chile",
+      "orcid": "0000-0003-3566-5953"
+    },
+    {
+      "name": "Evsukoff, Alexandre",
+      "affiliation": "COPPE, Universidade Federal do Rio de Janeiro",
+      "orcid": "0000-0002-7828-0124"
+    }
+  ],
+  "keywords": [
+    "social networks",
+    "brokerage",
+    "segregation",
+    "urban inequality",
+    "social class",
+    "mobile phone data",
+    "call detail records",
+    "null models",
+    "Gould-Fernandez",
+    "Brazil"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/horaciosamaniego/middle-class-brokerage",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://horaciosamaniego.github.io/middle-class-brokerage/",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ],
+  "notes": "Supported by ANID Fondecyt #1211490 (Chile).",
+  "language": "eng"
+}

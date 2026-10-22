@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: >-
+  If you use this code or data, please cite the article. Until it is published,
+  cite this software record.
+title: >-
+  Code and derived data for "Brokerage without bridging: the middle class does not
+  connect rich and poor in Brazilian cities"
+type: software
+version: 1.0.0
+date-released: 2026-10-22
+license: MIT
+repository-code: https://github.com/horaciosamaniego/middle-class-brokerage
+url: https://horaciosamaniego.github.io/middle-class-brokerage/
+abstract: >-
+  Code and city-level derived data testing whether any income stratum brokers
+  contact between rich and poor residents in directed mobile-phone contact networks
+  built from 3.1 billion calls across nearly 300 Brazilian cities. Tier 1 scripts
+  reproduce every figure and table from the derived data; tier 2 scripts build those
+  data from confidential per-city contact graphs, which are not included.
+keywords:
+  - social networks
+  - brokerage
+  - segregation
+  - urban inequality
+  - social class
+  - mobile phone data
+  - call detail records
+  - Brazil
+authors:
+  - family-names: Samaniego
+    given-names: Horacio
+    orcid: https://orcid.org/0000-0002-2485-9827
+    affiliation: Universidad Austral de Chile
+  - family-names: Menezes
+    given-names: Ronaldo
+    orcid: https://orcid.org/0000-0002-6479-6429
+    affiliation: University of Exeter
+  - family-names: Cantillán
+    given-names: Roberto
+    orcid: https://orcid.org/0000-0003-0494-0692
+    affiliation: Pontificia Universidad Católica de Chile
+  - family-names: Otero
+    given-names: Gabriel
+    orcid: https://orcid.org/0000-0001-9768-5699
+    affiliation: Universidad Diego Portales
+  - family-names: Bucca
+    given-names: Mauricio
+    orcid: https://orcid.org/0000-0003-3566-5953
+    affiliation: Pontificia Universidad Católica de Chile
+  - family-names: Evsukoff
+    given-names: Alexandre
+    orcid: https://orcid.org/0000-0002-7828-0124
+    affiliation: COPPE, Universidade Federal do Rio de Janeiro
