@@ -1,0 +1,44 @@
+---
+title: "Reproduce"
+---
+
+The analysis runs on call-detail records from a Brazilian operator. Those records, and
+the per-city contact graphs built from them, are confidential and are **not** in this
+repository. The code is therefore organised in two tiers.
+
+| tier | who can run it | input | output |
+|---|---|---|---|
+| **1. Figures and tables** | anyone | `data/derived/` (in this repository) | every figure and table in the paper and Supplement |
+| **2. Network analysis** | holders of the CDR graphs | per-city `.gt` graphs (not distributed) | the files in `data/derived/` |
+
+`data/derived/` contains city- and stratum-level aggregates only. No subscriber, node or
+edge appears in any file.
+
+## Tier 1
+
+```bash
+git clone https://github.com/horaciosamaniego/middle-class-brokerage
+cd middle-class-brokerage
+conda env create -f environment.yml && conda activate brokerage
+cd data/derived                 # scripts read and write relative to this folder
+python ../../code/make_si_tables.py \
+    --position position_summary_population.csv equal-population \
+    --position position_summary_area.csv       equal-area \
+    --ladder   gf_roles_population.csv          equal-population \
+    --ladder   gf_roles_antenna.csv             equal-area \
+    --check                     # confirms every value against the paper
+```
+
+The README maps each figure and table in the paper to the script that draws it.
+
+## Tier 2
+
+The scripts that build `data/derived/` from the graphs are in `code/` and are documented
+in the README. They require the per-city `.gt` graphs and
+[graph-tool](https://graph-tool.skewed.de).
+
+## Data availability
+
+Derived city-level data sufficient to reproduce every figure and table are included in
+this repository and archived on Zenodo. The underlying call-detail records were provided
+under a confidentiality agreement and cannot be shared.

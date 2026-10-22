@@ -1,0 +1,41 @@
+project:
+  type: website
+  output-dir: _site
+  # Render ONLY these pages. Without this list Quarto renders every .qmd, .md and
+  # .ipynb in the repo -- README.md, and any notebook in code/, which it would execute.
+  render:
+    - index.qmd
+    - reproduce.qmd
+
+execute:
+  # Store computed output in _freeze/ and commit it. The site then rebuilds on GitHub
+  # without Python or data, and re-runs a page only when its source changes.
+  freeze: auto
+
+website:
+  title: "Brokerage without bridging"
+  site-url: https://horaciosamaniego.github.io/middle-class-brokerage
+  repo-url: https://github.com/horaciosamaniego/middle-class-brokerage
+  navbar:
+    left:
+      - href: index.qmd
+        text: Result
+      - href: reproduce.qmd
+        text: Reproduce
+    right:
+      - icon: github
+        href: https://github.com/horaciosamaniego/middle-class-brokerage
+        aria-label: GitHub repository
+  page-footer:
+    left: "Samaniego, Menezes, Cantillán, Otero, Bucca & Evsukoff"
+    right: "Code MIT · Derived data CC BY 4.0"
+
+format:
+  html:
+    theme: [cosmo, styles.scss]
+    toc: false
+    code-fold: true
+    code-summary: "Show the code that draws this figure"
+    code-tools: false
+    fig-align: center
+    smooth-scroll: true

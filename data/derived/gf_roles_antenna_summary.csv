@@ -1,0 +1,9 @@
+role,n_cities,median_Rmix,iqr_lo,iqr_hi,frac_gt1,median_obs_share
+coordinator,35,1.2039,1.1111,1.2953,1.0,0.1759
+itinerant_above,35,1.2219,1.0999,1.2826,1.0,0.1288
+itinerant_below,35,1.454,1.3824,1.5572,1.0,0.0726
+gatekeeper,35,0.8699,0.8234,0.8957,0.0,0.1842
+representative,35,0.9159,0.8822,0.9371,0.0,0.1785
+liaison_intermediate,35,0.8972,0.8415,0.9139,0.0,0.0862
+liaison_extremal_above,35,0.9186,0.8869,0.9353,0.0,0.0833
+liaison_extremal_below,34,0.9209,0.8918,0.9646,0.176,0.0765

@@ -1,0 +1,17 @@
+role,quantity,n,slope,r,p
+coordinator,obs_share,110,0.0145,0.152,0.1119
+coordinator,R_mix,96,0.0156,0.057,0.5835
+itinerant_above,obs_share,110,-0.0118,-0.37,0.0001
+itinerant_above,R_mix,83,0.0889,0.276,0.0116
+itinerant_below,obs_share,110,-0.0201,-0.433,0.0
+itinerant_below,R_mix,81,0.0719,0.26,0.019
+gatekeeper,obs_share,110,0.0114,0.383,0.0
+gatekeeper,R_mix,93,-0.0071,-0.061,0.5608
+representative,obs_share,110,0.0133,0.524,0.0
+representative,R_mix,90,-0.0018,-0.021,0.8471
+liaison_intermediate,obs_share,110,-0.0022,-0.06,0.5367
+liaison_intermediate,R_mix,71,-0.0143,-0.191,0.111
+liaison_extremal_above,obs_share,110,-0.0031,-0.081,0.3983
+liaison_extremal_above,R_mix,70,0.0183,0.259,0.0303
+liaison_extremal_below,obs_share,110,-0.002,-0.08,0.4066
+liaison_extremal_below,R_mix,72,0.0181,0.189,0.1119

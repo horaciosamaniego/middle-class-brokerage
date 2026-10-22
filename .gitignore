@@ -8,3 +8,6 @@ _site/
 .quarto/
 _site/
 .quarto/
+
+/.quarto/
+**/*.quarto_ipynb

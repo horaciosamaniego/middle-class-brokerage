@@ -1,0 +1,154 @@
+---
+title: "Brokerage without bridging"
+subtitle: "The middle class does not connect rich and poor in Brazilian cities"
+---
+
+```{python}
+#| include: false
+# Everything quoted in the text below is computed here from data/derived/,
+# so the page can never disagree with the data it is built from.
+import os
+import numpy as np
+import pandas as pd
+
+DATA = "data/derived"
+ROLES = [  # (column suffix, label, endpoints share a stratum?)
+    ("coordinator",            "coordinator — insider broker",   True),
+    ("itinerant_above",        "itinerant — broker ranks above", True),
+    ("itinerant_below",        "itinerant — broker ranks below", True),
+    ("gatekeeper",             "gatekeeper",                     False),
+    ("representative",         "representative",                 False),
+    ("liaison_intermediate",   "liaison — intermediate broker",  False),
+    ("liaison_extremal_above", "liaison — broker above both",    False),
+    ("liaison_extremal_below", "liaison — broker below both",    False),
+]
+STRATS = [("gf_roles_population.csv", "equal-population", "#2A7F7A"),
+          ("gf_roles_antenna.csv",    "equal-area",       "#C98A2E")]
+
+tables = {}
+for fname, label, _ in STRATS:
+    p = os.path.join(DATA, fname)
+    if os.path.exists(p):
+        tables[label] = pd.read_csv(p)
+pop = tables["equal-population"]
+
+def vals(df, key):
+    c = f"Rmix_{key}"
+    return df[c].dropna() if c in df else pd.Series(dtype=float)
+
+li = vals(pop, "liaison_intermediate")
+n_li, k_li = len(li), int((li > 1).sum())
+bridging = (f"none of the {n_li}" if k_li == 0 else f"{k_li} of the {n_li}")
+same = pd.concat([vals(pop, k) for k, _, s in ROLES if s])
+pct_same = 100 * float((same > 1).mean())
+```
+
+::: {.eyebrow}
+Main result
+:::
+
+::: {.lede}
+Whether city dwellers of different means come into contact depends on who stands
+between them. We looked for those intermediaries in 3.1 billion mobile-phone calls
+across nearly 300 Brazilian cities.
+:::
+
+::: {.finding}
+**No stratum bridges the income poles.** No income group is over-represented on the
+routes linking the poorest and the richest residents, and removing the middle class
+cuts their reach to one another no more than removing the same number of people at
+random.
+:::
+
+::: {.finding}
+**Apparent elite gatekeeping is a volume effect.** The rich appear to control access to
+their own group until the volume of contact between groups is held fixed. Then the
+effect disappears, in every city and at both ends of the income distribution.
+:::
+
+::: {.finding}
+**Intermediation is assortative.** Across every pair of income strata, residents broker
+contact more often than chance only when the two people they connect belong to the same
+stratum. The intermediate broker that the bridging account predicts is enriched in
+`{python} bridging` cities.
+:::
+
+```{python}
+#| label: fig-roles
+#| fig-cap: "**Brokerage is enriched within strata and absent between them.** Enrichment of each brokerage role relative to a null model that holds fixed how much contact each income stratum exchanges. Points are medians across cities, bars the interquartile range. To the right of the dashed line a role occurs more often than chance. Two ways of dividing income into strata give the same picture."
+#| fig-alt: "Dot plot of eight brokerage roles. The three roles whose endpoints share a stratum lie to the right of the chance line; the five roles connecting different strata, including the intermediate liaison, lie at or left of it."
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+
+plt.rcParams.update({"font.family": "sans-serif", "font.size": 10,
+                     "axes.edgecolor": "#4F5B61", "axes.labelcolor": "#1B2A33",
+                     "xtick.color": "#4F5B61", "ytick.color": "#1B2A33"})
+fig, ax = plt.subplots(figsize=(7.4, 4.9))
+fig.patch.set_facecolor("#FAFAF7"); ax.set_facecolor("#FAFAF7")
+
+ypos = {}
+y = 0
+for i, (key, label, same) in enumerate(ROLES):
+    if i == 3:
+        y += 1.3                                   # room for the second group header
+    ypos[key] = y
+    y += 1
+
+offset = {"equal-population": -0.13, "equal-area": 0.13}
+for fname, strat, colour in STRATS:
+    if strat not in tables:
+        continue
+    for key, _, _ in ROLES:
+        v = vals(tables[strat], key)
+        if not len(v):
+            continue
+        q1, med, q3 = np.percentile(v, [25, 50, 75])
+        yy = ypos[key] + offset[strat]
+        ax.plot([q1, q3], [yy, yy], color=colour, lw=2.2, solid_capstyle="round")
+        ax.plot(med, yy, "o", ms=7, color=colour,
+                mfc=colour if strat == "equal-population" else "#FAFAF7", mew=1.8)
+
+ax.axvline(1, color="#1B2A33", ls=(0, (4, 3)), lw=1)
+ax.text(1.005, -1.05, "chance", color="#4F5B61", fontsize=9, va="center")
+ax.set_yticks([ypos[k] for k, _, _ in ROLES])
+ax.set_yticklabels([l for _, l, _ in ROLES])
+for t, (key, _, _) in zip(ax.get_yticklabels(), ROLES):
+    if key == "liaison_intermediate":
+        t.set_fontweight("bold")                   # the bridging role
+ax.set_xlabel("enrichment over chance, $R_\\mathrm{mix}$")
+for side in ("top", "right", "left"):
+    ax.spines[side].set_visible(False)
+ax.tick_params(axis="y", length=0)
+
+# group headers, right-aligned with the role labels, one row above each group
+for first, text in (("coordinator", "THE TWO CONNECTED PEOPLE SHARE A STRATUM"),
+                    ("gatekeeper", "THE TWO CONNECTED PEOPLE ARE IN DIFFERENT STRATA")):
+    ax.text(-0.02, ypos[first] - 1.0, text, transform=ax.get_yaxis_transform(),
+            ha="right", va="center", fontsize=8, color="#C98A2E", fontweight="bold")
+ax.set_ylim(y - 0.4, -1.6)                         # inverted: top headroom for headers
+
+handles = [Line2D([], [], marker="o", color=c, mfc=c if s == "equal-population" else "#FAFAF7",
+                  mew=1.8, lw=2.2, label=s) for _, s, c in STRATS if s in tables]
+ax.legend(handles=handles, frameon=False, loc="lower right", fontsize=9,
+          title="income strata", title_fontsize=9)
+fig.subplots_adjust(left=0.40, right=0.97, top=0.98, bottom=0.12)
+plt.show()
+```
+
+## What this means for cities
+
+Research on urban segregation has moved from where people live to where they go and
+whom they encounter. This result adds a further layer: how contact is arranged.
+Residents of these cities do call across class lines --- most two-step chains of contact
+link people in different income strata --- but no stratum occupies the positions that
+would carry interaction from one class to the next. A city can therefore look integrated
+by exposure, or even by its share of cross-class ties, while remaining divided in how
+those ties are mediated.
+
+::: {.status}
+This page summarises a manuscript under review. The figure and every number quoted here
+are computed from the derived data in this repository; full methods, null models,
+robustness checks and the calibration of the estimator are in the paper and its
+Supplementary Information. **Paper:** forthcoming. **Archived code and data:**
+[Zenodo](https://doi.org/10.5281/zenodo.XXXXXXX).
+:::

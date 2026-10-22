@@ -1,0 +1,39 @@
+# Publishes the Quarto site to GitHub Pages (gh-pages branch).
+#
+# MANUAL ONLY for now: run it from the repository's Actions tab ("Run workflow").
+# Pushing to main does NOT publish, so nothing goes public by accident while the paper
+# is under review. After acceptance, uncomment the `push:` block to publish on every push.
+#
+# One-time setup: run `quarto publish gh-pages` once from your machine to create the
+# gh-pages branch, then set Settings -> Pages -> Source to "Deploy from a branch",
+# branch gh-pages, folder / (root).
+#
+# The pages are rendered locally and their output committed in _freeze/, so this
+# workflow needs neither Python nor the data.
+
+name: Publish site
+
+on:
+  workflow_dispatch:
+#  push:
+#    branches: main
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render and publish to gh-pages
+        uses: quarto-dev/quarto-actions/publish@v2
+        with:
+          target: gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

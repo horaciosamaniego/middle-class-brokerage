@@ -1,0 +1,50 @@
+/*-- scss:defaults --*/
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+$font-family-sans-serif: "IBM Plex Sans", Helvetica, Arial, sans-serif;
+$headings-font-family:   "EB Garamond", Georgia, serif;
+$headings-font-weight:   400;
+$body-color:             #1B2A33;
+$body-bg:                #FAFAF7;
+$link-color:             #2A7F7A;
+$navbar-bg:              #1B2A33;
+$navbar-fg:              #FAFAF7;
+$footer-bg:              #FAFAF7;
+$code-block-bg:          #F1F1EC;
+
+/*-- scss:rules --*/
+.lede {
+  font-size: 1.3rem;
+  line-height: 1.5;
+  color: #4F5B61;
+  margin: 0.5rem 0 2rem;
+}
+.eyebrow {
+  color: #C98A2E;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.finding {
+  border-left: 3px solid #C98A2E;
+  padding: 0.2rem 0 0.2rem 1rem;
+  margin: 1.2rem 0;
+}
+.finding strong { color: #1B2A33; }
+.status {
+  font-size: 0.9rem;
+  color: #4F5B61;
+  border-top: 1px solid #E2E2DA;
+  padding-top: 1rem;
+  margin-top: 2.5rem;
+}
+h1.title { font-size: 2.6rem; line-height: 1.1; }
+
+/* Quarto writes fixed width/height on figures; let them shrink on narrow screens
+   instead of scrolling sideways inside their box. */
+.cell-output-display img.figure-img {
+  max-width: 100%;
+  height: auto;
+}
+.cell-output-display { overflow-x: visible; }
