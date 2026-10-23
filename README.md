@@ -6,7 +6,7 @@ Code and derived data for
 > *Brokerage without bridging: the middle class does not connect rich and poor in
 > Brazilian cities.*
 
-Archived release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+Archived release: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23606008.svg)](https://doi.org/10.5281/zenodo.23606008)
 
 ## Two levels of reproducibility
 
