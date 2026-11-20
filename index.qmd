@@ -1,6 +1,6 @@
 ---
 title: "Brokerage without bridging"
-subtitle: "The middle class does not connect rich and poor in Brazilian cities"
+subtitle: "Middle-income residents do not connect rich and poor in Brazilian cities"
 ---
 
 ```{python}
@@ -55,7 +55,7 @@ across nearly 300 Brazilian cities.
 
 ::: {.finding}
 **No stratum bridges the income poles.** No income group is over-represented on the
-routes linking the poorest and the richest residents, and removing the middle class
+routes linking the poorest and the richest residents, and removing middle-income residents
 cuts their reach to one another no more than removing the same number of people at
 random.
 :::
@@ -75,7 +75,7 @@ stratum. The intermediate broker that the bridging account predicts is enriched 
 
 ```{python}
 #| label: fig-roles
-#| fig-cap: "**Brokerage is enriched within strata and absent between them.** Enrichment of each brokerage role relative to a null model that holds fixed how much contact each income stratum exchanges. Points are medians across cities, bars the interquartile range. To the right of the dashed line a role occurs more often than chance. Two ways of dividing income into strata give the same picture."
+#| fig-cap: "**Brokerage is enriched within strata and depleted between them.** Enrichment of each brokerage role relative to a null model that holds fixed how much contact each income stratum exchanges, and how much of it is mutual. Points are medians across cities, bars the interquartile range. To the right of the dashed line a role occurs more often than chance. Two ways of dividing income into strata give the same picture."
 #| fig-alt: "Dot plot of eight brokerage roles. The three roles whose endpoints share a stratum lie to the right of the chance line; the five roles connecting different strata, including the intermediate liaison, lie at or left of it."
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -139,16 +139,16 @@ plt.show()
 
 Research on urban segregation has moved from where people live to where they go and
 whom they encounter. This result adds a further layer: how contact is arranged.
-Residents of these cities do call across class lines --- most two-step chains of contact
-link people in different income strata --- but no stratum occupies the positions that
-would carry interaction from one class to the next. A city can therefore look integrated
-by exposure, or even by its share of cross-class ties, while remaining divided in how
-those ties are mediated.
+Residents of these cities do call across income lines --- about three quarters of two-step
+chains of contact link people in different income strata --- but no stratum occupies the
+positions that would carry interaction from one income group to the next. A city can
+therefore look integrated by exposure, or even by its share of ties across income groups,
+while remaining divided in how those ties are mediated.
 
 ::: {.status}
 This page summarises a manuscript under review. The figure and every number quoted here
 are computed from the derived data in this repository; full methods, null models,
 robustness checks and the calibration of the estimator are in the paper and its
 Supplementary Information. **Paper:** forthcoming. **Archived code and data:**
-[Zenodo](https://doi.org/10.5281/zenodo.XXXXXXX).
+[Zenodo](https://doi.org/10.5281/zenodo.23606008).
 :::

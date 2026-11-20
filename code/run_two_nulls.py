@@ -76,7 +76,8 @@ def capable_broker_counts(g, qprop, pole, counter):
 def two_null_one_pole(g, qprop, pole, counter,
                       n_perm=500, perm_seed=20270624, n_strata=10,
                       n_mix=300, n_iter=2, burn_in=20, mix_seed=1,
-                      min_capable=MIN_CAPABLE, consistency_tol=CONSISTENCY_TOL):
+                      min_capable=MIN_CAPABLE, consistency_tol=CONSISTENCY_TOL,
+                      reciprocal=False):
     q = mn._quintile_array(g, qprop)
     n_pole = int((q == pole).sum()); n_counter = int((q == counter).sum())
     gk_cap, rp_cap, bnd_cap = capable_broker_counts(g, qprop, pole, counter)
@@ -93,7 +94,8 @@ def two_null_one_pole(g, qprop, pole, counter,
     obs_sub = mn.restricted_boundary_control(sub, "pole_block", pole=1, counter=0, weight_ep=None)
     mix = mn.mixing_preserving_null(sub, "pole_block", pole=1, counter=0, weight_ep=None,
                                     n_samples=n_mix, n_iter=n_iter, burn_in=burn_in,
-                                    seed=mix_seed, restrict_to_poles=False)
+                                    seed=mix_seed, restrict_to_poles=False,
+                                    reciprocal=reciprocal)
 
     analytic = mix["analytic_expected"]
     consistent = bool(np.isfinite(analytic) and analytic > 0 and
@@ -112,6 +114,10 @@ def two_null_one_pole(g, qprop, pole, counter,
         mix_ci_lo=mix["null_ci95"][0], mix_ci_hi=mix["null_ci95"][1],
         mix_null_mean=mix["null_mean"], analytic_expected=analytic,
         R_mix_analytic=mix["R_mix_analytic"], mix_consistent=consistent,
+        mix_symmetric=bool(mix.get("symmetric", False)),
+        mix_null=mix.get("null_model", "directed"),
+        mix_overlap_frac=mix.get("overlap_frac", float("nan")),
+        mix_recip_drift=mix.get("recip_drift", float("nan")),
         obs_subgraph_ok=bool(abs(obs_sub - observed) < 1e-6),
         mix_significant=bool(mix["p_upper"] < 0.05),
     )
@@ -232,7 +238,8 @@ def run_cities(data_dir, cities=None, pattern="grafo_*.gt", qprop="quintile_nati
             "power_ok", "observed",
             "R_perm", "p_perm", "perm_ci_lo", "perm_ci_hi", "perm_null_mean",
             "R_mix", "p_mix", "mix_ci_lo", "mix_ci_hi", "mix_null_mean",
-            "analytic_expected", "R_mix_analytic", "mix_consistent",
+            "analytic_expected", "R_mix_analytic", "mix_consistent", "mix_symmetric",
+            "mix_null", "mix_overlap_frac", "mix_recip_drift",
             "mix_significant", "obs_subgraph_ok", "verdict"]
     summary = summary[[c for c in lead if c in summary.columns]]
     summary.to_csv(master, index=False)
@@ -255,6 +262,8 @@ if __name__ == "__main__":
     ap.add_argument("--n_mix", type=int, default=300)
     ap.add_argument("--n_iter", type=int, default=2)
     ap.add_argument("--min_capable", type=int, default=MIN_CAPABLE)
+    ap.add_argument("--reciprocal", action="store_true",
+                    help="reciprocity-preserving mixing null (mutual ties undirected, one-way calls directed)")
     a = ap.parse_args()
 
     if a.probe:
@@ -269,4 +278,4 @@ if __name__ == "__main__":
         run_cities(a.data_dir, cities=a.cities, qprop=a.vp,
                    out_dir=a.out_dir, master=a.master,
                    n_perm=a.n_perm, n_mix=a.n_mix, n_iter=a.n_iter,
-                   min_capable=a.min_capable)
+                   min_capable=a.min_capable, reciprocal=a.reciprocal)

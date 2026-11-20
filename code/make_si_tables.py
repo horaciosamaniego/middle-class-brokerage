@@ -194,15 +194,15 @@ def position_table(specs, check=False):
 # ------------------------------------------------------------------ Table S5
 
 # Main-text Table 2 (equal-population), used by --check.
-MAIN_TEXT_LADDER = {
-    "coordinator": (96, 1.27, 100, 0.12),
-    "itinerant_above": (83, 1.22, 100, 0.11),
-    "itinerant_below": (81, 1.38, 100, 0.09),
-    "gatekeeper": (93, 0.88, 0, 0.17),
-    "representative": (90, 0.92, 0, 0.17),
-    "liaison_intermediate": (71, 0.91, 0, 0.11),
-    "liaison_extremal_above": (70, 0.92, 0, 0.11),
-    "liaison_extremal_below": (72, 0.91, 6, 0.10),
+MAIN_TEXT_LADDER = {   # main-text Table 2, reciprocity-preserving null, return paths excluded
+    "coordinator": (96, 1.16, 97, 0.10),
+    "itinerant_above": (79, 1.03, 78, 0.09),
+    "itinerant_below": (77, 1.08, 88, 0.07),
+    "gatekeeper": (89, 0.97, 8, 0.19),
+    "representative": (84, 0.97, 11, 0.18),
+    "liaison_intermediate": (68, 0.96, 4, 0.13),
+    "liaison_extremal_above": (69, 0.97, 9, 0.13),
+    "liaison_extremal_below": (67, 0.98, 22, 0.12),
 }
 
 

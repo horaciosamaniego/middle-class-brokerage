@@ -19,6 +19,7 @@
 #   ./run_5x5_parallel.sh ../grafos_ciudades_dirigidos_v4/ powered_population.txt \
 #        quintile_nation_population r5x5_population.csv 12 3
 set -euo pipefail
+# EXTRA_ARGS (optional) is appended to every python call, e.g. EXTRA_ARGS=--reciprocal
 
 DATA_DIR="${1:?graph dir}"
 CITIES_FILE="${2:?cities file, one name per line}"
@@ -72,7 +73,7 @@ if [[ -e "$OUT" && ! -f "$OUT" ]]; then
   exit 2
 fi
 mkdir -p "$OUTDIR"
-export DATA_DIR VP RUNNER OUTDIR N_SAMPLES N_ITER BURN_IN MIN_CAPABLE
+export DATA_DIR VP RUNNER OUTDIR N_SAMPLES N_ITER BURN_IN MIN_CAPABLE EXTRA_ARGS
 
 # ---- tier cities by graph size (longest-job-first) ----------------------------
 BIGL="$OUTDIR/.big"; SMALLL="$OUTDIR/.small"; : > "$BIGL"; : > "$SMALLL"; miss=0
@@ -98,7 +99,7 @@ run_one() {
   # --master so its end-of-run concat can't clobber another mode. One city => --cities.
   if python "$RUNNER" --data_dir "$DATA_DIR" --vp "$VP" --cities "$city" \
         --out_dir "$OUTDIR" --n_samples "$N_SAMPLES" --n_iter "$N_ITER" \
-        --burn_in "$BURN_IN" --min_capable "$MIN_CAPABLE" \
+        --burn_in "$BURN_IN" --min_capable "$MIN_CAPABLE" ${EXTRA_ARGS:-} \
         > "$OUTDIR/${safe}.log" 2>&1; then
       if [[ -s "$part" ]]; then echo "  done: $city"; else
         echo "  WARN: $city produced no part-file (see log)" >&2; fi

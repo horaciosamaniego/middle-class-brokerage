@@ -1,9 +1,9 @@
 {
-  "title": "Code and derived data for \"Brokerage without bridging: the middle class does not connect rich and poor in Brazilian cities\"",
+  "title": "Code and derived data for \"Brokerage without bridging: middle-income residents do not connect rich and poor in Brazilian cities\"",
   "upload_type": "software",
   "access_right": "open",
   "license": "mit",
-  "description": "<p>Code and city-level derived data for Samaniego, Menezes, Cantillán, Otero, Bucca &amp; Evsukoff, <em>Brokerage without bridging: the middle class does not connect rich and poor in Brazilian cities</em> (submitted to <em>Nature Cities</em>).</p><p>The study tests whether any income stratum brokers contact between rich and poor residents, using directed mobile-phone contact networks built from 3.1 billion calls across nearly 300 Brazilian cities, with a Gould–Fernandez brokerage census evaluated against a mixing-preserving null model.</p><p>The repository is organised in two tiers. <strong>Tier 1</strong> scripts reproduce every figure and table in the paper and its Supplementary Information from the derived data in <code>data/derived/</code>, which contain city- and stratum-level aggregates only. <strong>Tier 2</strong> scripts build those derived data from per-city contact graphs; the graphs and the underlying call-detail records are confidential and are not included.</p><p>Code is released under the MIT licence; derived data under CC BY 4.0. A summary of the main result is at <a href=\"https://horaciosamaniego.github.io/middle-class-brokerage/\">horaciosamaniego.github.io/middle-class-brokerage</a>.</p>",
+  "description": "<p>Code and city-level derived data for Samaniego, Menezes, Cantillán, Otero, Bucca &amp; Evsukoff, <em>Brokerage without bridging: middle-income residents do not connect rich and poor in Brazilian cities</em> (submitted to <em>Nature Cities</em>).</p><p>The study tests whether any income stratum brokers contact between rich and poor residents, using directed mobile-phone contact networks built from 3.1 billion calls across nearly 300 Brazilian cities, with a Gould–Fernandez brokerage census evaluated against a mixing-preserving null model that also preserves reciprocity, and repeated on the reciprocated backbone of each network.</p><p>The repository is organised in two tiers. <strong>Tier 1</strong> scripts reproduce every figure and table in the paper and its Supplementary Information from the derived data in <code>data/derived/</code>, which contain city- and stratum-level aggregates only. <strong>Tier 2</strong> scripts build those derived data from per-city contact graphs; the graphs and the underlying call-detail records are confidential and are not included.</p><p>Code is released under the MIT licence; derived data under CC BY 4.0. A summary of the main result is at <a href=\"https://horaciosamaniego.github.io/middle-class-brokerage/\">horaciosamaniego.github.io/middle-class-brokerage</a>.</p>",
   "creators": [
     {
       "name": "Samaniego, Horacio",
@@ -61,5 +61,6 @@
     }
   ],
   "notes": "Supported by ANID Fondecyt #1211490 (Chile).",
-  "language": "eng"
+  "language": "eng",
+  "version": "2.0.0"
 }

@@ -11,3 +11,4 @@ _site/
 
 /.quarto/
 **/*.quarto_ipynb
+data/derived/stab_*.tex

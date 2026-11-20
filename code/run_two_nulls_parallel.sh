@@ -20,6 +20,7 @@
 #   ./run_two_nulls_parallel.sh ../grafos_ciudades_dirigidos_v4/ powered_antenna.txt \
 #        quintile_nation_antenna two_null_antenna.csv 12 3
 set -euo pipefail
+# EXTRA_ARGS (optional) is appended to every python call, e.g. EXTRA_ARGS=--reciprocal
 
 DATA_DIR="${1:?graph dir}"
 CITIES_FILE="${2:?cities file, one name per line}"
@@ -73,7 +74,7 @@ if [[ -e "$OUT" && ! -f "$OUT" ]]; then
   exit 2
 fi
 mkdir -p "$OUTDIR"
-export DATA_DIR VP RUNNER OUTDIR N_PERM N_MIX N_ITER MIN_CAPABLE
+export DATA_DIR VP RUNNER OUTDIR N_PERM N_MIX N_ITER MIN_CAPABLE EXTRA_ARGS
 
 # ---- tier cities by graph size (longest-job-first) ----------------------------
 BIGL="$OUTDIR/.big"; SMALLL="$OUTDIR/.small"; : > "$BIGL"; : > "$SMALLL"; miss=0
@@ -100,7 +101,7 @@ run_one() {
   if python "$RUNNER" --data_dir "$DATA_DIR" --vp "$VP" --cities "$city" \
         --out_dir "$OUTDIR" --master "$OUTDIR/.master_${safe}.csv" \
         --n_perm "$N_PERM" --n_mix "$N_MIX" --n_iter "$N_ITER" \
-        --min_capable "$MIN_CAPABLE" > "$OUTDIR/${safe}.log" 2>&1; then
+        --min_capable "$MIN_CAPABLE" ${EXTRA_ARGS:-} > "$OUTDIR/${safe}.log" 2>&1; then
       if [[ -s "$part" ]]; then echo "  done: $city"; else
         echo "  WARN: $city produced no part-file (see log)" >&2; fi
   else

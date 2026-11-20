@@ -90,6 +90,62 @@ def per_city_roles(df, min_capable):
     return out
 
 
+def _nfc(x):
+    import unicodedata
+    return unicodedata.normalize("NFC", str(x))
+
+
+def attach_returns(d, path, vp):
+    """Merge ret_obs/ret_null from make_backbone.py's returns_diag.csv onto the
+    same-endpoint cells, and check that the file describes the same graphs: its
+    B_same must equal this file's B_obs on every merged cell."""
+    rt = pd.read_csv(path)
+    if "vp" in rt.columns:
+        if not vp:
+            raise SystemExit("--returns needs --vp (the file holds several stratifications)")
+        rt = rt[rt.vp == vp]
+        if rt.empty:
+            raise SystemExit(f"no rows for vp={vp} in {path}")
+    rt = rt.assign(j=rt.i, _c=rt.city.map(_nfc))[["_c", "i", "j", "m", "B_same", "ret_obs", "ret_null"]]
+    d = d.drop(columns=[c for c in ("ret_obs", "ret_null") if c in d.columns])
+    d = d.assign(_c=d.city.map(_nfc)).merge(rt, on=["_c", "i", "j", "m"], how="left")
+    same = d.i == d.j
+    have = same & d.ret_obs.notna()
+    cities_have = d.loc[have, "_c"].nunique()
+    cities_all = d["_c"].nunique()
+    print(f"returns attached for {cities_have} of {cities_all} cities")
+    if cities_have < cities_all:
+        miss = sorted(set(d["_c"]) - set(d.loc[have, "_c"]))
+        print(f"  WARN no returns for: {miss[:10]}{' ...' if len(miss) > 10 else ''}")
+    rel = (d.loc[have, "B_same"] - d.loc[have, "B_obs"]).abs() / d.loc[have, "B_obs"].clip(lower=1)
+    print(f"  check B_same vs B_obs on {int(have.sum())} cells: max rel diff {rel.max():.2e}")
+    if len(rel) and rel.max() > 1e-6:
+        raise SystemExit("returns file does not match this r5x5 file (different graphs or "
+                         "stratification). Check --vp and the graph directory used.")
+    off = ~same
+    d.loc[off, ["ret_obs", "ret_null"]] = 0.0
+    return d.drop(columns=["_c", "B_same"])
+
+
+def remove_returns(d):
+    if not {"ret_obs", "ret_null"} <= set(d.columns):
+        raise SystemExit("--exclude_returns needs ret_obs/ret_null columns; "
+                         "pass --returns returns_diag.csv --vp <stratification>")
+    d = d.copy()
+    same = d.i == d.j
+    lacking = set(d.loc[same & d.ret_obs.isna(), "city"])
+    if lacking:                                    # never mix corrected and uncorrected cities
+        print(f"  dropping {len(lacking)} cities without return counts")
+        d = d[~d.city.isin(lacking)].copy()
+        same = d.i == d.j
+    tot = d.loc[same, "B_obs"].sum()
+    share = d.loc[same, "ret_obs"].sum() / tot if tot > 0 else np.nan
+    print(f"removing return paths: {share:.2%} of observed same-endpoint two-paths")
+    d.loc[same, "B_obs"] = d.loc[same, "B_obs"] - d.loc[same, "ret_obs"]
+    d.loc[same, "null_mean"] = d.loc[same, "null_mean"] - d.loc[same, "ret_null"]
+    return d
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--r5x5", required=True, help="tidy r5x5 sweep CSV (city,i,j,m,B_obs,null_mean,R_mix,...)")
@@ -102,6 +158,16 @@ def main():
     ap.add_argument("--scaling_out", default=None,
                     help="optional output for the role-vs-network-size regression "
                          "(default: <out>_scaling.csv). Requires n_nodes available.")
+    ap.add_argument("--exclude_returns", action="store_true",
+                    help="remove a->b->a return paths from the same-endpoint cells (i == j) "
+                         "before computing R_mix, using columns ret_obs/ret_null (written by "
+                         "the current mixing_null_5x5.py) or the file given in --returns")
+    ap.add_argument("--returns", default=None,
+                    help="returns_diag.csv from make_backbone.py, for an r5x5 file written "
+                         "before ret_obs/ret_null existed (the original directed runs)")
+    ap.add_argument("--vp", default=None,
+                    help="with --returns: the stratification of this r5x5 file, e.g. "
+                         "quintile_nation_population")
     a = ap.parse_args()
 
     d = pd.read_csv(a.r5x5)
@@ -109,6 +175,11 @@ def main():
     missing = need - set(d.columns)
     if missing:
         raise SystemExit(f"r5x5 file missing columns: {missing}")
+
+    if a.returns:
+        d = attach_returns(d, a.returns, a.vp)
+    if a.exclude_returns:
+        d = remove_returns(d)
 
     # network size per city: from the r5x5 file if present, else joined from --sizes
     size_map = {}

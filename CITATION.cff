@@ -3,18 +3,19 @@ message: >-
   If you use this code or data, please cite the article. Until it is published,
   cite this software record.
 title: >-
-  Code and derived data for "Brokerage without bridging: the middle class does not
-  connect rich and poor in Brazilian cities"
+  Code and derived data for "Brokerage without bridging: middle-income residents do
+  not connect rich and poor in Brazilian cities"
 type: software
-version: 1.0.0
-date-released: 2026-10-22
+version: 2.0.0
+date-released: 2026-11-20
 license: MIT
 repository-code: https://github.com/horaciosamaniego/middle-class-brokerage
 url: https://horaciosamaniego.github.io/middle-class-brokerage/
 abstract: >-
   Code and city-level derived data testing whether any income stratum brokers
   contact between rich and poor residents in directed mobile-phone contact networks
-  built from 3.1 billion calls across nearly 300 Brazilian cities. Tier 1 scripts
+  built from 3.1 billion calls across nearly 300 Brazilian cities, evaluated against a
+  mixing-preserving null that also preserves reciprocity. Tier 1 scripts
   reproduce every figure and table from the derived data; tier 2 scripts build those
   data from confidential per-city contact graphs, which are not included.
 keywords:

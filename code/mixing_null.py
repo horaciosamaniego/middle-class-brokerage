@@ -65,7 +65,11 @@ def _quintile_array(g, quintile_prop):
 
 
 def _edge_arrays(g, weight_ep=None):
-    """Return src, tgt, w (aligned, edge-index order), N."""
+    """Return src, tgt, w (aligned, edge-index order), N.
+
+    An UNDIRECTED graph is returned as its two arcs per edge, so every statistic
+    below gives the same value on an undirected graph as on the equivalent
+    symmetric directed graph (the reciprocated backbone)."""
     if weight_ep is None:
         E = g.get_edges()
         w = np.ones(E.shape[0], dtype=float)
@@ -73,7 +77,57 @@ def _edge_arrays(g, weight_ep=None):
         wp = g.ep[weight_ep] if isinstance(weight_ep, str) else weight_ep
         E = g.get_edges([wp])
         w = E[:, 2].astype(float)
-    return E[:, 0].astype(np.int64), E[:, 1].astype(np.int64), w, int(g.num_vertices())
+    s, t = E[:, 0].astype(np.int64), E[:, 1].astype(np.int64)
+    if not g.is_directed():
+        s, t, w = np.concatenate([s, t]), np.concatenate([t, s]), np.concatenate([w, w])
+    return s, t, w, int(g.num_vertices())
+
+
+# ----------------------------------------------------------------------
+#  Reciprocated (symmetric) graphs.
+#  The reciprocated backbone keeps an arc only when its reverse also exists, so
+#  every tie appears as two arcs. A directed swap would break that symmetry, and
+#  its null would then describe a different kind of graph from the one tested:
+#  in a symmetric graph a broker's in- and out-neighbours are the same people,
+#  so the expected two-path count is k(k-1) per broker, not the k_in*k_out of an
+#  independent-stub null. On symmetric graphs the mixing null therefore rewires
+#  the UNDIRECTED version (one edge per mutual pair), which preserves each node's
+#  degree, the symmetric mixing matrix, and the symmetry itself. On graphs that
+#  are not fully reciprocated (every original call graph) nothing changes.
+# ----------------------------------------------------------------------
+def is_symmetric(g):
+    """True when g is directed and every arc has its reverse."""
+    if not g.is_directed():
+        return False
+    E = g.get_edges()
+    if E.shape[0] == 0:
+        return False
+    N = int(g.num_vertices())
+    s = E[:, 0].astype(np.int64); t = E[:, 1].astype(np.int64)
+    fwd = np.unique(s * N + t)
+    rev = t * N + s
+    i = np.searchsorted(fwd, rev)
+    i[i == fwd.size] = 0
+    return bool(np.all(fwd[i] == rev))
+
+
+def undirected_version(g, quintile_prop):
+    """One undirected edge per mutual pair of a symmetric directed graph, on the
+    same vertex indices, with the quintile labels copied as an int property.
+    Returns (graph, name of the label property)."""
+    E = g.get_edges()
+    N = int(g.num_vertices())
+    s = E[:, 0].astype(np.int64); t = E[:, 1].astype(np.int64)
+    keep = s < t                                   # each mutual pair once, no loops
+    codes = np.unique(s[keep] * N + t[keep])
+    u = Graph(directed=False)
+    u.add_vertex(N)
+    u.add_edge_list(np.column_stack([codes // N, codes % N]))
+    name = quintile_prop if isinstance(quintile_prop, str) else "quintile"
+    qp = u.new_vertex_property("int")
+    qp.a = _quintile_array(g, quintile_prop)
+    u.vp[name] = qp
+    return u, name
 
 
 # ----------------------------------------------------------------------
@@ -142,6 +196,246 @@ def dcsbm_expected_bc(g, quintile_prop="quintile_nation",
     return float((gk + rp).sum())
 
 
+def symmetric_expected_bc(g, quintile_prop="quintile_nation", pole=5, counter=1):
+    """Analytic expectation of the boundary-control statistic under the symmetric
+    (undirected) mixing null. A pole broker b with degree k_b draws its neighbours
+    from the pole block's stubs without replacement, a fixed number of which lead
+    to `counter` (m_pc) and to `pole` (m_pp), so
+        E[n_counter(b) * n_pole(b)] = k_b (k_b - 1) m_pc m_pp / (K_p (K_p - 1)),
+    and beta_b = 2 n_counter(b) n_pole(b) because each tie is two arcs.
+    Accepts a symmetric directed graph or an undirected one."""
+    src, tgt, _, N = _edge_arrays(g, None)       # both arcs of every tie
+    q = _quintile_array(g, quintile_prop)
+    k = np.bincount(src, minlength=N).astype(float)
+    pm = q == pole
+    K_p = float(k[pm].sum())
+    if K_p < 2:
+        return float("nan")
+    m_pc = float(((q[src] == pole) & (q[tgt] == counter)).sum())
+    m_pp = float(((q[src] == pole) & (q[tgt] == pole)).sum())
+    kb = k[pm]
+    return float(2.0 * (kb * (kb - 1.0)).sum() * m_pc * m_pp / (K_p * (K_p - 1.0)))
+
+
+# ----------------------------------------------------------------------
+#  Reciprocity-preserving mixing null (for the full, partly reciprocated
+#  call graphs).
+#  A call graph mixes mutual ties (a <-> b) with one-way calls (a -> b only).
+#  The directed swap treats every arc independently, so its null graphs are
+#  almost never reciprocated: a broker's in- and out-contacts, which in the
+#  data overlap through mutual ties, become independent draws. That inflates
+#  the null expectation of every two-path count (k_in*k_out instead of
+#  k(k-1) on the mutual part) and removes the a->b->a return paths that
+#  mutual ties create in the same-endpoint ladder cells.
+#  This null splits the graph into its mutual part (one undirected edge per
+#  pair) and its one-way part (directed arcs), and rewires each separately
+#  under the constrained configuration model with the strata as blocks. It
+#  holds fixed, per user, the number of mutual ties and the one-way in- and
+#  out-degrees, and, per pair of strata, the number of mutual ties and of
+#  one-way arcs in each direction. The two parts are rewired independently, so
+#  a rewired one-way arc can land on a pair that is already mutual, or two
+#  one-way arcs can meet head to head. Such coincidences are rare; they are
+#  kept, not removed, because dropping them would change the degrees the null
+#  is meant to hold fixed, and they are reported (overlap_frac, recip_drift).
+#  With them kept, the swap mean matches reciprocal_expected_bc.
+# ----------------------------------------------------------------------
+def _unique_codes(g):
+    """Sorted unique arc codes s*N + t of a directed graph, self-loops dropped."""
+    E = g.get_edges()
+    N = int(g.num_vertices())
+    s = E[:, 0].astype(np.int64); t = E[:, 1].astype(np.int64)
+    ok = s != t
+    return np.unique(s[ok] * N + t[ok]), N
+
+
+def _has_reverse(codes, N):
+    """Boolean mask over sorted unique codes: True where the reverse arc exists."""
+    if codes.size == 0:
+        return np.zeros(0, bool)
+    rev = (codes % N) * N + codes // N
+    i = np.searchsorted(codes, rev)
+    i[i == codes.size] = 0
+    return codes[i] == rev
+
+
+def returns_by_strata(codes, N, q):
+    """ret[i, m]: return paths a -> b -> a with broker b in stratum m and a in
+    stratum i, i.e. arcs b -> a whose reverse exists, from sorted unique codes."""
+    mutual = codes[_has_reverse(codes, N)]
+    qb, qa = q[mutual // N], q[mutual % N]
+    ok = (qb >= 1) & (qb <= 5) & (qa >= 1) & (qa <= 5)
+    ret = np.zeros((6, 6))
+    np.add.at(ret, (qa[ok], qb[ok]), 1.0)
+    return ret
+
+
+def split_reciprocal(g, quintile_prop):
+    """Split a directed graph into (M, A, name): M undirected, one edge per mutual
+    pair; A directed, the one-way arcs. Same vertex indices as g; both carry the
+    labels as an int vertex property called `name`."""
+    codes, N = _unique_codes(g)
+    mut = _has_reverse(codes, N)
+    mc = codes[mut]
+    mc = mc[(mc // N) < (mc % N)]                  # each mutual pair once
+    ac = codes[~mut]
+    q = _quintile_array(g, quintile_prop)
+    name = quintile_prop if isinstance(quintile_prop, str) else "quintile"
+    out = []
+    for directed, cc in ((False, mc), (True, ac)):
+        h = Graph(directed=directed)
+        h.add_vertex(N)
+        if cc.size:
+            h.add_edge_list(np.column_stack([cc // N, cc % N]))
+        qp = h.new_vertex_property("int")
+        qp.a = q
+        h.vp[name] = qp
+        out.append(h)
+    return out[0], out[1], name
+
+
+def union_arrays(M, A):
+    """src, tgt of the directed multigraph formed by M (both directions) and A."""
+    EM = M.get_edges(); EA = A.get_edges()
+    s = np.concatenate([EM[:, 0], EM[:, 1], EA[:, 0]]).astype(np.int64)
+    t = np.concatenate([EM[:, 1], EM[:, 0], EA[:, 1]]).astype(np.int64)
+    return s, t
+
+
+def returns_by_strata_multi(s, t, N, q):
+    """ret[i, m] for a directed multigraph given as arc arrays: the number of
+    return paths a -> b -> a (b in m, a in i), counting multiplicities, i.e.
+    sum over arcs b -> a of mult(b -> a) * mult(a -> b). Equals
+    returns_by_strata on a simple graph."""
+    ok = s != t
+    codes, cnt = np.unique(s[ok] * N + t[ok], return_counts=True)
+    if codes.size == 0:
+        return np.zeros((6, 6))
+    rev = (codes % N) * N + codes // N
+    i = np.searchsorted(codes, rev); i[i == codes.size] = 0
+    hit = codes[i] == rev
+    w = cnt[hit] * cnt[i[hit]]
+    b, a = codes[hit] // N, codes[hit] % N
+    qb, qa = q[b], q[a]
+    ok = (qb >= 1) & (qb <= 5) & (qa >= 1) & (qa <= 5)
+    ret = np.zeros((6, 6))
+    np.add.at(ret, (qa[ok], qb[ok]), w[ok].astype(float))
+    return ret
+
+
+def union_diagnostics(s, t, N, n_mutual_arcs):
+    """(overlap_frac, recip_drift) of a null multigraph: the share of arcs that
+    duplicate another arc (a one-way arc on a mutual pair), and the share of arcs
+    reciprocated beyond the mutual part (one-way arcs that met head to head)."""
+    ok = s != t
+    codes = np.unique(s[ok] * N + t[ok])
+    overlap = (int(ok.sum()) - codes.size) / max(int(ok.sum()), 1)
+    drift = (int(_has_reverse(codes, N).sum()) - n_mutual_arcs) / max(codes.size, 1)
+    return overlap, drift
+
+
+def reciprocal_expected_bc(g, quintile_prop="quintile_nation", pole=5, counter=1):
+    """Analytic expectation of the boundary-control statistic under the
+    reciprocity-preserving null. For a pole broker b with mutual degree mu,
+    one-way in-degree alpha and out-degree omega, contacts from the mutual part
+    are drawn without replacement from the pole's mutual stubs, and one-way in-
+    and out-contacts independently from the pole's one-way in- and out-stubs:
+        in_c = m_c + a_in_c,  out_p = m_p + a_out_p   (and symmetrically)
+        E[m_c m_p] = mu (mu-1) M_pc M_pp / (K (K-1))
+    and beta_b = in_c*out_p + in_p*out_c."""
+    codes, N = _unique_codes(g)
+    mut = _has_reverse(codes, N)
+    q = _quintile_array(g, quintile_prop)
+    pm = q == pole
+
+    def part(cc):
+        s, t = cc // N, cc % N
+        out = np.bincount(s, minlength=N).astype(float)
+        inn = np.bincount(t, minlength=N).astype(float)
+        def n(a, b):
+            return float(((q[s] == a) & (q[t] == b)).sum())
+        return s, t, out, inn, n
+
+    # mutual part, as arcs in both directions
+    _, _, mu, _, nM = part(codes[mut])
+    K = float(mu[pm].sum())
+    M_pc, M_pp = nM(pole, counter), nM(pole, pole)
+    # one-way part
+    _, _, om, al, nA = part(codes[~mut])
+    Ain, Aout = float(al[pm].sum()), float(om[pm].sum())
+    A_cp, A_pp, A_pc = nA(counter, pole), nA(pole, pole), nA(pole, counter)
+
+    m, a, o = mu[pm], al[pm], om[pm]
+    f = lambda x, y: x / y if y > 0 else 0.0
+    Emc, Emp = m * f(M_pc, K), m * f(M_pp, K)
+    Emm = m * (m - 1.0) * (f(M_pc * M_pp, K * (K - 1.0)) if K > 1 else 0.0)
+    Eic, Eip = a * f(A_cp, Ain), a * f(A_pp, Ain)
+    Eop, Eoc = o * f(A_pp, Aout), o * f(A_pc, Aout)
+    gk = Emm + Emc * Eop + Eic * Emp + Eic * Eop        # E[in_c * out_p]
+    rp = Emm + Emp * Eoc + Eip * Emc + Eip * Eoc        # E[in_p * out_c]
+    return float((gk + rp).sum())
+
+
+def reciprocity_preserving_null(g, quintile_prop="quintile_nation", pole=5, counter=1,
+                                n_samples=200, n_iter=1, burn_in=10, seed=None,
+                                n_diag=10):
+    """Same outputs as mixing_preserving_null, under the reciprocity-preserving
+    null. Unweighted statistic only. overlap_frac and recip_drift (see
+    union_diagnostics) are averaged over the first n_diag samples."""
+    from graph_tool.generation import random_rewire
+    try:
+        from graph_tool import seed_rng
+        if seed is not None:
+            seed_rng(int(seed))
+    except Exception:
+        pass
+    observed = restricted_boundary_control(g, quintile_prop, pole, counter, None)
+    M, A, name = split_reciprocal(g, quintile_prop)
+    N = int(g.num_vertices())
+    q = _quintile_array(g, quintile_prop)
+    rewire_parts(M, A, name, burn_in)
+    samples = np.empty(n_samples, dtype=float)
+    diag = []
+    for k in range(n_samples):
+        rewire_parts(M, A, name, n_iter)
+        src, tgt = union_arrays(M, A)
+        samples[k] = _bc_from_arrays(src, tgt, np.ones(src.size), N, q, pole, counter)
+        if k < n_diag:
+            diag.append(union_diagnostics(src, tgt, N, 2 * M.num_edges()))
+
+    null_mean = float(samples.mean())
+    lo, hi = np.percentile(samples, [2.5, 97.5])
+    analytic = reciprocal_expected_bc(g, quintile_prop, pole, counter)
+    d = np.array(diag) if diag else np.full((1, 2), np.nan)
+    return {
+        "pole": pole, "counter": counter,
+        "observed": observed, "null_mean": null_mean,
+        "R_mix": observed / null_mean if null_mean > 0 else float("nan"),
+        "null_ci95": (float(lo), float(hi)),
+        "p_upper": float((np.sum(samples >= observed) + 1) / (n_samples + 1)),
+        "analytic_expected": analytic,
+        "R_mix_analytic": observed / analytic if analytic > 0 else float("nan"),
+        "n_samples": n_samples, "n_iter": n_iter, "burn_in": burn_in,
+        "restricted_to_poles": False, "weighted": False,
+        "symmetric": A.num_edges() == 0, "null_model": "reciprocal",
+        "overlap_frac": float(d[:, 0].mean()), "recip_drift": float(d[:, 1].mean()),
+    }
+
+
+def rewire_parts(M, A, name, n_iter):
+    """One step of the reciprocity-preserving chain: rewire the mutual part as an
+    undirected graph and the one-way part as a directed one, each under the
+    constrained configuration model with the strata as blocks."""
+    from graph_tool.generation import random_rewire
+    if n_iter <= 0:
+        return
+    rw = dict(model="constrained-configuration", edge_sweep=True,
+              parallel_edges=False, self_loops=False)
+    if M.num_edges():
+        random_rewire(M, n_iter=int(n_iter), block_membership=M.vp[name], **rw)
+    if A.num_edges():
+        random_rewire(A, n_iter=int(n_iter), block_membership=A.vp[name], **rw)
+
+
 # ----------------------------------------------------------------------
 #  Null B (microcanonical): constrained directed double-edge swap.
 #  EXACT only for the unweighted statistic (see CONVENTION note in header).
@@ -150,7 +444,8 @@ def mixing_preserving_null(g, quintile_prop="quintile_nation",
                            pole=5, counter=1, weight_ep=None,
                            n_samples=200, n_iter=1, burn_in=10,
                            restrict_to_poles=False, seed=None,
-                           parallel_edges=False, self_loops=False):
+                           parallel_edges=False, self_loops=False, symmetric=None,
+                           reciprocal=False):
     """
     Returns observed, null_mean, R_mix=observed/null_mean, 95% null interval,
     upper-tail p, and the analytic (DC-SBM) cross-check.
@@ -159,7 +454,21 @@ def mixing_preserving_null(g, quintile_prop="quintile_nation",
     the full graph for R_mix, since constrained-configuration rewires each block
     pair independently. Use weight_ep=None (graph-tool preserves the count
     mixing matrix, not the weighted one).
+
+    symmetric=None detects a fully reciprocated graph (is_symmetric) and then
+    rewires its undirected version, so the null keeps every tie mutual; the
+    analytic cross-check switches to symmetric_expected_bc accordingly. On any
+    graph that is not fully reciprocated the behaviour is unchanged.
+
+    reciprocal=True uses reciprocity_preserving_null instead (mutual ties rewired
+    as undirected edges, one-way calls as directed arcs). On a fully reciprocated
+    graph that is the same as the symmetric null.
     """
+    if reciprocal:
+        if weight_ep is not None or restrict_to_poles:
+            raise ValueError("the reciprocity-preserving null is unweighted and runs on the whole graph")
+        return reciprocity_preserving_null(g, quintile_prop, pole, counter, n_samples=n_samples,
+                                           n_iter=n_iter, burn_in=burn_in, seed=seed)
     from graph_tool.generation import random_rewire
     try:
         from graph_tool import seed_rng
@@ -168,14 +477,23 @@ def mixing_preserving_null(g, quintile_prop="quintile_nation",
     except Exception:
         pass
 
-    if not g.is_directed():
+    if symmetric is None:
+        symmetric = is_symmetric(g)
+    if not symmetric and not g.is_directed():
         raise ValueError("mixing_preserving_null expects a directed graph.")
+    if symmetric and weight_ep is not None:
+        raise ValueError("the symmetric null is defined for the unweighted statistic only.")
 
     observed = restricted_boundary_control(g, quintile_prop, pole, counter, weight_ep)
 
-    g2 = g.copy()
-    bm = g2.new_vertex_property("int")
-    bm.a = _quintile_array(g2, quintile_prop)
+    if symmetric:
+        g2, qname = undirected_version(g, quintile_prop)
+        bm = g2.vp[qname]
+    else:
+        g2 = g.copy()
+        qname = quintile_prop
+        bm = g2.new_vertex_property("int")
+        bm.a = _quintile_array(g2, quintile_prop)
 
     pin = None
     if restrict_to_poles:
@@ -199,13 +517,16 @@ def mixing_preserving_null(g, quintile_prop="quintile_nation",
     samples = np.empty(n_samples, dtype=float)
     for s in range(n_samples):
         random_rewire(g2, n_iter=int(n_iter), **rw_kwargs)
-        samples[s] = restricted_boundary_control(g2, quintile_prop, pole, counter, weight_ep)
+        samples[s] = restricted_boundary_control(g2, qname, pole, counter, weight_ep)
 
     null_mean = float(samples.mean())
     ratio = observed / null_mean if null_mean > 0 else float("nan")
     lo, hi = np.percentile(samples, [2.5, 97.5])
     p_upper = float((np.sum(samples >= observed) + 1) / (n_samples + 1))
-    analytic = dcsbm_expected_bc(g, quintile_prop, pole, counter, weight_ep, exact=True)
+    if symmetric:
+        analytic = symmetric_expected_bc(g, quintile_prop, pole, counter)
+    else:
+        analytic = dcsbm_expected_bc(g, quintile_prop, pole, counter, weight_ep, exact=True)
 
     return {
         "pole": pole, "counter": counter,
@@ -215,6 +536,8 @@ def mixing_preserving_null(g, quintile_prop="quintile_nation",
         "R_mix_analytic": (observed / analytic) if analytic and analytic > 0 else float("nan"),
         "n_samples": n_samples, "n_iter": n_iter, "burn_in": burn_in,
         "restricted_to_poles": restrict_to_poles, "weighted": weight_ep is not None,
+        "symmetric": bool(symmetric),
+        "null_model": "symmetric" if symmetric else "directed",
     }
 
 

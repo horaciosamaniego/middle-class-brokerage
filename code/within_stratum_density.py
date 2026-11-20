@@ -51,7 +51,11 @@ def row_enrichment(r5x5_df, city, min_capable):
       coordinator : broker is an insider (m == k)
       itinerant   : broker is an outsider (m != k)   [pooled over above/below]
     plus the pooled value, all testable cells only. Returns dict k -> (coord, itin, pooled)."""
-    d = r5x5_df[(r5x5_df.city == city) & (r5x5_df.i == r5x5_df.j)]
+    d = r5x5_df[(r5x5_df.city == city) & (r5x5_df.i == r5x5_df.j)].copy()
+    if {"ret_obs", "ret_null"} <= set(d.columns):
+        # remove a->b->a return paths from both sides, as gf_roles.py --exclude_returns does
+        d["null_mean"] = d.null_mean - d.ret_null
+        d["R_mix"] = (d.B_obs - d.ret_obs) / d.null_mean.where(d.null_mean > 0)
     d = d[d.null_mean >= min_capable]
     out = {}
     for k in range(1, 6):
